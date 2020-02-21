@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Fantastic beasts store</title>
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <script src="./node_modules/web3/dist/web3.min.js">
+    </script>
+</head>
+<body class="container">
+  <center><h1><Font face="AngsanaUPC" Size= "80" Color="#d9f2e6">FANTASTIC BEASTS STORE</Font></h1></center>
+  <h2 id="result"></h2>
+        <section>
+        	<nav>
+        	<div class="row">
+          		<div class="sell"></div>
+        	</div>
+        	</nav>
+        	<article>
+            	<div class="owned"></div>
+        	</article>
+		</section>
+</body>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script>
+    if (typeof web3 !== 'undefined') {
+        // this statement is executed if you are using 
+        // MetaMask 
+        async function enableAccounts() {
+            await ethereum.enable()
+        }
+        enableAccounts();
+    } else {
+        // set the provider you want from Web3.providers
+        web3 = new Web3(
+            new Web3.providers.HttpProvider(
+                "http://localhost:8545"));
+    }
+
+    let abi = [
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "buyer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "text",
+				"type": "string"
+			}
+		],
+		"name": "ErrorLog",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "buyer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			}
+		],
+		"name": "Sold",
+		"type": "event"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "image",
+				"type": "string"
+			}
+		],
+		"name": "add",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getAll",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "Id",
+				"type": "uint256"
+			}
+		],
+		"name": "getById",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			}
+		],
+		"name": "sell",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"payable": true,
+		"stateMutability": "payable",
+		"type": "function"
+	}
+]
+    var initShopContract = web3.eth.contract(abi);
+    var myContract = initShopContract.at('0xB8d8C527902Bf8F4491E4Ff91715bef64c17E3A4');
+	$("#result").hide();
+	getBeasts();
+
+		myContract.Sold().watch(function(error, result) {
+            if (!error){
+               if (result.args.buyer == web3.eth.defaultAccount){
+					$("#result").html("Thank you " + result.args.buyer).show().delay(5000).queue(function (n) {
+                        $(this).hide(); n();});               
+            	}
+            }
+        });
+		myContract.ErrorLog().watch(function(error, result) {
+            if (!error){
+               if (result.args.buyer == web3.eth.defaultAccount){
+					$("#result").html("Error. Reason: " + result.args.text).show().delay(5000).queue(function (n) {
+                        $(this).hide(); n();});               
+            	}
+            }
+    	});
+    
+
+    function BuyBeasts(id, price) {
+        myContract.sell(id,{
+              gas: 300000,
+              from: web3.eth.accounts[0],
+              value: price
+            },
+            (error, result) => {
+				$("#result").html("Wait for confirmation ....").show().delay(5000).queue(function (n) {
+                        $(this).hide(); n();});               
+            });
+	}
+
+    function getBeasts(){
+        myContract.getAll(function (error, result) {
+            for (var i in result) {
+                myContract.getById(i,
+                    (error, result) => {
+                        console.log(result);
+                        if (!error) { 
+
+							if(!result[5]){
+								initHtml = '<div class="column">' +
+									'<center><label><Font face="Courier New", Courier, monospace Size= "6.2" >'+result[1]+'</Font></label></center>' +
+									'<center><img src="'+result[4]+'" width="150" height="200"></center>'+
+									'<center><p id="onboard" style="color:rgb(23, 32, 42 ); font-weight: bold;"><Font face="AngsanaUPC" Size= "6.3" >'+ web3.fromWei(parseInt(result[2].toString()), 'ether') +' Ether</Font></p></center>' +
+									'<center><button onClick="BuyBeasts(' + result[0]+ ',' + result[2] + ')" >Buy</button></center>' +
+									'</div>';
+									$(".sell").append(initHtml);
+		
+							}else{
+								initHtml = '<table id="t01">'+
+									'<tr>'+
+									'<th>Animal\'s Name</th>'+
+									'<th>Owner\'s Address</th>'+
+									'</tr>' +
+									'<tr bgcolor="#EDEDE3">'+
+                      				'<td><p>'+result[1]+'</p>'+
+                      				'<img src="'+result[4]+'" width="150" height="200">'+
+                      				'</td>'+
+									'<td>'+result[3]+'</td>'+
+									'</tr>';
+									$(".owned").append(initHtml);
+							}
+						}else
+							console.error(error);
+					});
+                console.log(i);
+            }
+
+        });
+    }
+
+</script>
+</html>
